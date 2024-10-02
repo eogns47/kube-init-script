@@ -44,6 +44,7 @@ sudo apt-get install -y containerd.io
 sudo mkdir -p /etc/containerd
 sudo containerd config default | sudo tee /etc/containerd/config.toml
 
+# Cgroup은 프로세스에 대한 리소스를 정의할 때 필요 컨테이너 런타임과 쿠블렛이 하나는 systemd를, 하나는 Croupfs를 사용하는 건 불가능
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
 sudo systemctl restart containerd
 sudo systemctl enable containerd
@@ -68,6 +69,7 @@ chmod +x ./kubectl
 sudo mv ./kubectl /usr/local/bin/kubectl
 
 # kubernetes 설치
+mkdir -p ~/kubeadm && cd ~/kubeadm
 sudo bash -c 'curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg'
 sudo bash -c 'echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | tee /etc/apt/sources.list.d/kubernetes.list'
 
@@ -79,17 +81,3 @@ sudo systemctl enable --now kubelet
 mkdir -p ~/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-# Calico 설치
-mkdir -p ~/calico && cd ~/calico
-
-curl -LO https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml
-kubectl create -f tigera-operator.yaml
-
-curl -LO https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/custom-resources.yaml
-
-# pod 네트워크 변경 (CIDR 수정)
-sed -i 's/cidr: .*/cidr: 10.233.64.0\/18/' custom-resources.yaml
-
-kubectl create -f custom-resources.yaml
-
